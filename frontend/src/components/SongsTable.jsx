@@ -9,6 +9,11 @@ import {
   Paper,
   Tooltip,
   Rating,
+  Skeleton,
+  Alert,
+  AlertTitle,
+  Button,
+  Box,
 } from '@mui/material'
 import { useSongs } from '../hooks/useSongs.js'
 
@@ -68,7 +73,8 @@ const ROW_HEIGHT = 41
 const HEADER_HEIGHT = 68
 
 export function SongsTable() {
-  const { store, total, page, setPage, sort, order, setSort, updateRating } = useSongs()
+  const { store, total, page, setPage, sort, order, setSort, updateRating, loading, error, retry } =
+    useSongs()
 
   const visibleCount =
     total === null ? PAGE_SIZE : Math.max(0, Math.min(PAGE_SIZE, total - page * PAGE_SIZE))
@@ -150,41 +156,72 @@ export function SongsTable() {
             minHeight: ROW_HEIGHT * PAGE_SIZE,
           }}
         >
-          {rows.map(({ slot, index, song }) =>
-            song ? (
-              <TableRow key={song.id} hover>
-                {COLUMNS.map((col) =>
-                  col.key === 'title' ? (
-                    <TableCell key={col.key}>
-                      <Tooltip title={song.title} enterDelay={400}>
-                        <span>{song.title}</span>
-                      </Tooltip>
+          {error ? (
+            <TableRow>
+              <TableCell colSpan={COLUMNS.length} sx={{ border: 0, py: 6 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <Alert
+                    severity="error"
+                    action={
+                      <Button color="inherit" size="small" onClick={retry}>
+                        Retry
+                      </Button>
+                    }
+                    sx={{ maxWidth: 480 }}
+                  >
+                    <AlertTitle>Failed to load songs</AlertTitle>
+                    {error.message}
+                  </Alert>
+                </Box>
+              </TableCell>
+            </TableRow>
+          ) : total === 0 ? (
+            <TableRow>
+              <TableCell colSpan={COLUMNS.length} align="center" sx={{ border: 0, py: 6 }}>
+                No songs found.
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map(({ slot, index, song }) =>
+              song ? (
+                <TableRow key={song.id} hover>
+                  {COLUMNS.map((col) =>
+                    col.key === 'title' ? (
+                      <TableCell key={col.key}>
+                        <Tooltip title={song.title} enterDelay={400}>
+                          <span>{song.title}</span>
+                        </Tooltip>
+                      </TableCell>
+                    ) : col.key === 'rating' ? (
+                      <TableCell key={col.key} align="center">
+                        <Rating
+                          value={song.rating ?? 0}
+                          size="small"
+                          onChange={(_, newValue) => {
+                            if (newValue) updateRating(index, song.id, newValue)
+                          }}
+                          sx={{ '& .MuiRating-icon': { mx: 0 } }}
+                        />
+                      </TableCell>
+                    ) : (
+                      <TableCell key={col.key} align={col.numeric ? 'center' : 'left'}>
+                        {song[col.key] ?? ''}
+                      </TableCell>
+                    ),
+                  )}
+                </TableRow>
+              ) : (
+                <TableRow key={`placeholder-${slot}`}>
+                  {COLUMNS.map((col) => (
+                    <TableCell key={col.key} align={col.key === 'title' ? 'left' : 'center'}>
+                      {loading ? (
+                        <Skeleton variant="text" width={col.width * 0.7} sx={{ mx: 'auto' }} />
+                      ) : null}
                     </TableCell>
-                  ) : col.key === 'rating' ? (
-                    <TableCell key={col.key} align="center">
-                      <Rating
-                        value={song.rating ?? 0}
-                        size="small"
-                        onChange={(_, newValue) => {
-                          if (newValue) updateRating(index, song.id, newValue)
-                        }}
-                        sx={{ '& .MuiRating-icon': { mx: 0 } }}
-                      />
-                    </TableCell>
-                  ) : (
-                    <TableCell key={col.key} align={col.numeric ? 'center' : 'left'}>
-                      {song[col.key] ?? ''}
-                    </TableCell>
-                  ),
-                )}
-              </TableRow>
-            ) : (
-              <TableRow key={`placeholder-${slot}`}>
-                {COLUMNS.map((col) => (
-                  <TableCell key={col.key} />
-                ))}
-              </TableRow>
-            ),
+                  ))}
+                </TableRow>
+              ),
+            )
           )}
         </TableBody>
       </Table>
