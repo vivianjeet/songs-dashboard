@@ -115,3 +115,18 @@ class SongRepository:
             return [SongSuggestion(id=row["id"], title=row["title"]) for row in rows]
         finally:
             conn.close()
+    
+    def update_rating(self, song_id: str, rating: int) -> Song | None:
+        conn = self._get_connection()
+        try:
+            rows = conn.execute(
+                "UPDATE songs SET rating = ? WHERE id = ?", (rating, song_id)
+            )
+            conn.commit()
+            if rows.rowcount == 0:
+                return None
+            row = conn.execute("SELECT * FROM songs WHERE id = ?", (song_id,)).fetchone()
+            return self.row_to_song(row)
+        finally:
+            conn.close()
+    

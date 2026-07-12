@@ -2,7 +2,7 @@ from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 
 from app.db import SongRepository
-from app.entities import Song, SongSuggestion
+from app.entities import Song, SongSuggestion, RatingUpdate
 
 from typing import Literal
 
@@ -45,3 +45,10 @@ def search_songs(title: str = Query(...)) -> Song:
 @app.get("/api/songs/suggestions", response_model=list[SongSuggestion])
 def suggest_songs(title: str = Query(..., min_length=1)) -> list[SongSuggestion]:
     return repository.suggest_titles(title)
+
+@app.put("/api/songs/{song_id}/rating", response_model=Song)
+def rate_song(song_id: str, body: RatingUpdate) -> Song:
+    song = repository.update_rating(song_id, body.rating)
+    if song is None:
+        raise HTTPException(status_code=404, detail=f"Song with id '{song_id}' not found")
+    return song

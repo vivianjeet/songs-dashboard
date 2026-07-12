@@ -27,3 +27,6 @@ class Song(SongBase):
 class SongSuggestion(BaseModel):
     id: str
     title: str
+
+class RatingUpdate(BaseModel):
+    rating: int = Field(ge=1, le=5)
