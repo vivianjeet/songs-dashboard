@@ -43,6 +43,13 @@ class SongRepository:
         )
     """
 
+    SORTABLE_COLUMNS = {
+        "id", "title", "danceability", "energy", "key", "loudness", "mode",
+        "acousticness", "instrumentalness", "liveness", "valence", "tempo",
+        "duration_ms", "time_signature", "num_bars", "num_sections",
+        "num_segments", "class", "rating"
+    }
+
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
     
@@ -65,10 +72,26 @@ class SongRepository:
     
     def _insert_songs(self, conn: sqlite3.Connection, songs: list[SongBase]) -> None:
         for song in songs:
-            values = song.model_dump(by_alisas=True)
+            values = song.model_dump(by_alias=True)
             values["rating"] = None
             conn.execute(self.INSERT_ROW, values)
         conn.commit()
     
-    def row_to_song(self, row: sqlite3.row) -> Song:
+    def row_to_song(self, row: sqlite3.Row) -> Song:
          return Song(**dict(row))
+    
+    def list_songs(self, offset: int, limit: int, sort: str = "id", order: str = "asc") -> tuple[list[Song], int]:
+        if sort not in self.SORTABLE_COLUMNS:
+            raise ValueError(f"Invalid sort column: {sort}")
+        direction = "DESC" if order.lower() == "desc" else "ASC"
+
+        conn = self._get_connection()
+        try:
+            total = conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
+            rows = conn.execute(
+                f"SELECT * FROM songs ORDER BY {sort} {direction} LIMIT ? OFFSET ?", (limit, offset)
+            ).fetchall()
+            songs = [self.row_to_song(row) for row in rows]
+            return songs, total
+        finally:
+            conn.close()
