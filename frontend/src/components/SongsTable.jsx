@@ -15,6 +15,7 @@ import {
   Button,
   Box,
 } from '@mui/material'
+import { buildCsv, downloadCsv } from '../utils/csv.js'
 
 function SortTriangleIcon(props) {
   return (
@@ -102,6 +103,7 @@ export function SongsTable({
   }
 
   const handleSort = (column) => {
+    if (searchResult) return
     const direction = sort === column && order === 'asc' ? 'desc' : 'asc'
     setSort(column, direction)
   }
@@ -134,6 +136,12 @@ export function SongsTable({
       )}
     </TableRow>
   )
+
+  const handleExportCsv = () => {
+    const visibleSongs = rows.map((r) => r.song).filter(Boolean)
+    const csv = buildCsv(COLUMNS, visibleSongs)
+    downloadCsv(`songs-page-${page + 1}.csv`, csv)
+  }
 
   const bodyHeight = searchResult ? ROW_HEIGHT : ROW_HEIGHT * PAGE_SIZE
   const paperHeight = HEADER_HEIGHT + bodyHeight + (searchResult ? 0 : PAGINATION_HEIGHT)
@@ -183,13 +191,17 @@ export function SongsTable({
                 sx={{ whiteSpace: 'nowrap', width: col.width, minWidth: col.width, maxWidth: col.width }}
               >
                 <TableSortLabel
-                  active={sort === col.key}
+                  active={!searchResult && sort === col.key}
                   direction={sort === col.key ? order : 'asc'}
-                  onClick={() => handleSort(col.key)}
+                  onClick={searchResult ? undefined : () => handleSort(col.key)}
                   IconComponent={SortTriangleIcon}
+                  hideSortIcon={false}
                   sx={{
                     flexDirection: 'column',
                     gap: 0.25,
+                    mt: '6px',
+                    cursor: searchResult ? 'default' : 'pointer',
+                    pointerEvents: searchResult ? 'none' : 'auto',
                     '& .MuiTableSortLabel-icon': { margin: 0 },
                   }}
                 >
@@ -259,18 +271,23 @@ export function SongsTable({
         </TableBody>
       </Table>
       {!searchResult && (
-        <TablePagination
-          component="div"
-          count={total ?? 0}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={PAGE_SIZE}
-          rowsPerPageOptions={[PAGE_SIZE]}
-          sx={{
-            '& .MuiTablePagination-toolbar': { justifyContent: 'flex-start' },
-            '& .MuiTablePagination-spacer': { display: 'none' },
-          }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 2 }}>
+          <TablePagination
+            component="div"
+            count={total ?? 0}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={PAGE_SIZE}
+            rowsPerPageOptions={[PAGE_SIZE]}
+            sx={{
+              '& .MuiTablePagination-toolbar': { justifyContent: 'flex-start' },
+              '& .MuiTablePagination-spacer': { display: 'none' },
+            }}
+          />
+          <Button size="small" onClick={handleExportCsv}>
+            Download CSV
+          </Button>
+        </Box>
       )}
     </Paper>
   )

@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, Suspense, lazy } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { AppBar, Toolbar, Typography, Box, IconButton, Button, ThemeProvider, CssBaseline } from '@mui/material'
+import { AppBar, Toolbar, Typography, Box, IconButton, Button, ThemeProvider, CssBaseline, CircularProgress } from '@mui/material'
 import Brightness4Icon from '@mui/icons-material/Brightness4'
 import Brightness7Icon from '@mui/icons-material/Brightness7'
 import { createAppTheme } from './theme/theme.js'
-import { SongsPage } from './pages/SongsPage.jsx'
-import { ChartsPage } from './pages/ChartsPage.jsx'
+
+const SongsPage = lazy(() => import('./pages/SongsPage.jsx').then((m) => ({ default: m.SongsPage })))
+const ChartsPage = lazy(() => import('./pages/ChartsPage.jsx').then((m) => ({ default: m.ChartsPage })))
 
 function App() {
   const [mode, setMode] = useState('light')
@@ -47,10 +48,18 @@ function App() {
             </IconButton>
           </Toolbar>
         </AppBar>
-        <Routes>
-          <Route path="/" element={<SongsPage />} />
-          <Route path="/charts" element={<ChartsPage />} />
-        </Routes>
+        <Suspense
+          fallback={
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
+              <CircularProgress />
+            </Box>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<SongsPage />} />
+            <Route path="/charts" element={<ChartsPage />} />
+          </Routes>
+        </Suspense>
       </Box>
     </ThemeProvider>
   )

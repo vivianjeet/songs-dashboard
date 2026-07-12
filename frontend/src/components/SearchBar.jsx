@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, TextField, Button, Paper, List, ListItemButton, ListItemText, Alert } from '@mui/material'
 import { searchSongByTitle, suggestSongTitles } from '../api/api.js'
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
@@ -26,13 +26,16 @@ function localExactMatch(store, title) {
 export function SearchBar({ store, isFullyLoaded, onResult, onClear, hasResult }) {
   const [inputValue, setInputValue] = useState('')
   const [suggestions, setSuggestions] = useState([])
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState(null)
   const debouncedInput = useDebouncedValue(inputValue, 300)
-  const [lastSearchedQuery, setLastSearchedQuery] = useState(null)
+  const requestIdRef = useRef(0)
+  const suppressSuggestionsRef = useRef(false)
 
   useEffect(() => {
-    if (debouncedInput.length === 0 || debouncedInput === lastSearchedQuery) {
+    const requestId = ++requestIdRef.current
+    if (suppressSuggestionsRef.current || debouncedInput.length === 0) {
       setSuggestions([])
       return
     }
@@ -40,24 +43,27 @@ export function SearchBar({ store, isFullyLoaded, onResult, onClear, hasResult }
       setSuggestions(localSuggestions(store, debouncedInput))
       return
     }
-    let cancelled = false
     const controller = new AbortController()
     suggestSongTitles(debouncedInput, controller.signal)
       .then((results) => {
-        if (!cancelled) setSuggestions(results)
+        if (requestIdRef.current === requestId) setSuggestions(results)
       })
       .catch((err) => {
-        if (!cancelled && err.name !== 'AbortError') setError(err)
+        if (requestIdRef.current === requestId && err.name !== 'AbortError') setError(err)
       })
     return () => {
-      cancelled = true
       controller.abort()
     }
-  }, [debouncedInput, isFullyLoaded, store, lastSearchedQuery])
+  }, [debouncedInput, isFullyLoaded, store])
+
+  useEffect(() => {
+    setHighlightedIndex(-1)
+  }, [suggestions])
 
   const runSearch = async (title) => {
     if (title.length === 0) return
-    setLastSearchedQuery(title)
+    requestIdRef.current += 1
+    suppressSuggestionsRef.current = true
     setError(null)
     setNotFound(false)
     setSuggestions([])
@@ -85,15 +91,34 @@ export function SearchBar({ store, isFullyLoaded, onResult, onClear, hasResult }
   }
 
   const handleSuggestionClick = (title) => {
-    setSuggestions([])
     setInputValue(title)
     runSearch(title)
   }
 
   const handleInputChange = (e) => {
+    suppressSuggestionsRef.current = false
     setInputValue(e.target.value)
     setNotFound(false)
     onClear()
+  }
+
+  const handleKeyDown = (e) => {
+    if (suggestions.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedIndex((prev) => (prev + 1) % suggestions.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1))
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0) {
+        e.preventDefault()
+        handleSuggestionClick(suggestions[highlightedIndex].title)
+      }
+    } else if (e.key === 'Escape') {
+      setSuggestions([])
+    }
   }
 
   return (
@@ -104,6 +129,13 @@ export function SearchBar({ store, isFullyLoaded, onResult, onClear, hasResult }
           placeholder="Search by song title"
           value={inputValue}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          role="combobox"
+          aria-expanded={suggestions.length > 0}
+          aria-controls="search-suggestions-list"
+          aria-activedescendant={
+            highlightedIndex >= 0 ? `suggestion-${suggestions[highlightedIndex]?.id}` : undefined
+          }
           sx={{ minWidth: 280 }}
         />
         <Button
@@ -115,27 +147,35 @@ export function SearchBar({ store, isFullyLoaded, onResult, onClear, hasResult }
         >
           Get Song
         </Button>
-        {hasResult && (
-          <Button
-            size="small"
-            onClick={() => {
-              setInputValue('')
-              setLastSearchedQuery(null)
-              setNotFound(false)
-              setSuggestions([])
-              onClear()
-            }}
-          >
-            Clear search
-          </Button>
-        )}
+        <Button
+          size="small"
+          onClick={() => {
+            requestIdRef.current += 1
+            suppressSuggestionsRef.current = false
+            setInputValue('')
+            setNotFound(false)
+            setSuggestions([])
+            onClear()
+          }}
+          sx={{ visibility: hasResult ? 'visible' : 'hidden' }}
+        >
+          Clear search
+        </Button>
       </Box>
 
       {suggestions.length > 0 && (
         <Paper sx={{ position: 'absolute', top: '100%', mt: 0.5, zIndex: 10, minWidth: 280 }}>
-          <List dense>
-            {suggestions.map((s) => (
-              <ListItemButton key={s.id} onClick={() => handleSuggestionClick(s.title)}>
+          <List dense id="search-suggestions-list" role="listbox">
+            {suggestions.map((s, i) => (
+              <ListItemButton
+                key={s.id}
+                id={`suggestion-${s.id}`}
+                role="option"
+                aria-selected={i === highlightedIndex}
+                selected={i === highlightedIndex}
+                onClick={() => handleSuggestionClick(s.title)}
+                onMouseEnter={() => setHighlightedIndex(i)}
+              >
                 <ListItemText primary={s.title} />
               </ListItemButton>
             ))}
