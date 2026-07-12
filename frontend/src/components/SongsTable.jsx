@@ -90,6 +90,7 @@ export function SongsTable({
   searchResult,
 }) {
   const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState(false)
 
   const visibleCount =
     total === null ? PAGE_SIZE : Math.max(0, Math.min(PAGE_SIZE, total - page * PAGE_SIZE))
@@ -143,10 +144,13 @@ export function SongsTable({
 
   const handleExportCsv = async () => {
     setIsExporting(true)
+    setExportError(false)
     try {
       const data = await fetchSongs({ offset: 0, limit: total ?? 100, sort, order })
       const csv = buildCsv(COLUMNS, data.items)
       downloadCsv('songs.csv', csv)
+    } catch (err) {
+      setExportError(true)
     } finally {
       setIsExporting(false)
     }
@@ -280,22 +284,29 @@ export function SongsTable({
         </TableBody>
       </Table>
       {!searchResult && (
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 2 }}>
-          <TablePagination
-            component="div"
-            count={total ?? 0}
-            page={page}
-            onPageChange={(_, newPage) => setPage(newPage)}
-            rowsPerPage={PAGE_SIZE}
-            rowsPerPageOptions={[PAGE_SIZE]}
-            sx={{
-              '& .MuiTablePagination-toolbar': { justifyContent: 'flex-start' },
-              '& .MuiTablePagination-spacer': { display: 'none' },
-            }}
-          />
-          <Button size="small" onClick={handleExportCsv} disabled={isExporting}>
-            {isExporting ? 'Preparing CSV...' : 'Download CSV'}
-          </Button>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 2 }}>
+            <TablePagination
+              component="div"
+              count={total ?? 0}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={PAGE_SIZE}
+              rowsPerPageOptions={[PAGE_SIZE]}
+              sx={{
+                '& .MuiTablePagination-toolbar': { justifyContent: 'flex-start' },
+                '& .MuiTablePagination-spacer': { display: 'none' },
+              }}
+            />
+            <Button size="small" onClick={handleExportCsv} disabled={isExporting}>
+              {isExporting ? 'Preparing CSV...' : 'Download CSV'}
+            </Button>
+          </Box>
+          {exportError && (
+            <Alert severity="error" sx={{ mx: 2, mb: 1 }} onClose={() => setExportError(false)}>
+              Could not export CSV. Please try again.
+            </Alert>
+          )}
         </Box>
       )}
     </Paper>
