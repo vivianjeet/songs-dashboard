@@ -12,7 +12,7 @@ export function createAppTheme(mode) {
       borderRadius: 8,
     },
     typography: {
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: '"Source Code Pro", monospace',
     },
   })
 }

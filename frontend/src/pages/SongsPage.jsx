@@ -18,10 +18,13 @@ export function SongsPage() {
         sx={{
           position: 'absolute',
           top: SEARCH_BAR_TOP,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: `calc(50% - ${TABLE_WIDTH / 2}px - 24px)`,
           px: 3,
           zIndex: 2,
+          [`@media (min-width:${TABLE_WIDTH + CONTENT_PADDING}px)`]: {
+            left: '50%',
+            transform: 'translateX(-50%)',
+          },
         }}
       >
         <SearchBar
