@@ -32,9 +32,11 @@ describe('compareSongs', () => {
     expect(compareSongs(a, b, 'tempo', 'asc')).toBe(0)
   })
 
-  it('sorts non-ASCII titles correctly', () => {
-    const a = { title: 'a' }
-    const b = { title: 'A' }
-    expect(typeof compareSongs(a, b, 'title', 'asc')).toBe('number')
+  it('produces a symmetric result when comparands are swapped', () => {
+    const a = { title: 'Apple' }
+    const b = { title: 'Banana' }
+    const forward = compareSongs(a, b, 'title', 'asc')
+    const backward = compareSongs(b, a, 'title', 'asc')
+    expect(Math.sign(forward)).toBe(-Math.sign(backward))
   })
 })

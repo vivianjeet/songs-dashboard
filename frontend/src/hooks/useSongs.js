@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fetchSongs, updateSongRating } from '../api/api.js'
 import { compareSongs } from '../utils/sortSongs.js'
 
 const PAGE_SIZE = 10
-const STORE_CAP = 100
 
 export function useSongs() {
     const [store, setStore] = useState(new Map())
@@ -13,95 +12,38 @@ export function useSongs() {
     const [page, setPage] = useState(0)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-    const inFlight = useRef(new Set())
 
-    const isFullyLoadedRef = useRef(false)
-    useEffect(() => {
-        isFullyLoadedRef.current = total !== null && store.size >= total
-    }, [store, total])
-
-
-    const loadRange = useCallback(
-        async (start, count) => {
-            const key = `${start}:${count}:${sort}:${order}`
-            if (inFlight.current.has(key)) return
-            inFlight.current.add(key)
-            setLoading(true)
-            setError(null)
-            try {
-                const data = await fetchSongs({ offset: start, limit: count, sort, order })
-                setStore((prev) => {
-                    const next = new Map(prev)
-                    data.items.forEach((song, i) => next.set(start + i, song))
-                    if (next.size > STORE_CAP) {
-                        const excess = next.size - STORE_CAP
-                        const keys = [...next.keys()].sort((a,b) => Math.abs(a - page) - Math.abs(b - page))
-                        keys.slice(-excess).forEach((k) => next.delete(k))
-                    }
-                    return next
-                })
-                setTotal(data.total)
-            } catch (err) {
-                setError(err)
-            } finally {
-                inFlight.current.delete(key)
-                setLoading(false)
-            }
-        },[sort, order, page]
-    )
-
-    const initialLoadStartedRef = useRef(false)
-    useEffect(() => {
-        if (initialLoadStartedRef.current) return
-        initialLoadStartedRef.current = true
-        loadRange(0, STORE_CAP)
-    }, [loadRange])
-
-    useEffect(() => {
-        if (!initialLoadStartedRef.current) return
-        const windowStart = Math.max(0, (page - 1)*PAGE_SIZE)
-        const windowEnd = total === null ? (page + 2) * PAGE_SIZE : Math.min(total, (page + 2) * PAGE_SIZE)
-
-        const missingRanges = []
-        let rangeStart = null
-        for (let i = windowStart; i < windowEnd; i++){
-            if (!store.has(i)) {
-                if (rangeStart === null) rangeStart = i
-            } else if (rangeStart !== null) {
-                missingRanges.push([rangeStart, i - rangeStart])
-                rangeStart = null
-            }
+    const loadAll = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const data = await fetchSongs({ offset: 0, limit: 100, sort, order })
+            setStore(new Map(data.items.map((song, i) => [i, song])))
+            setTotal(data.total)
+        } catch (err) {
+            setError(err)
+        } finally {
+            setLoading(false)
         }
+    }, [sort, order])
 
-        if (rangeStart != null) {
-            missingRanges.push([rangeStart, windowEnd - rangeStart])
-        }
-
-        missingRanges.forEach(([start, count]) => loadRange(start, count))
-    }, [page, store, total, loadRange])
+    useEffect(() => {
+        loadAll()
+    }, [loadAll])
 
     const setSort = useCallback((column, direction) => {
-        if (isFullyLoadedRef.current) {
-            setStore((prev) => {
+        setStore((prev) => {
             const sorted = [...prev.values()].sort((a, b) => compareSongs(a, b, column, direction))
             return new Map(sorted.map((song, i) => [i, song]))
-            })
-            setSortState(column)
-            setOrderState(direction)
-            setPage(0)
-            return
-        }
-        setStore(new Map())
-        setTotal(null)
-        setPage(0)
+        })
         setSortState(column)
         setOrderState(direction)
+        setPage(0)
     }, [])
 
     const retry = useCallback(() => {
-        setStore(new Map())
-        loadRange(page*PAGE_SIZE, PAGE_SIZE)
-    }, [page, loadRange])
+        loadAll()
+    }, [loadAll])
 
     const updateRating = useCallback(async (index, songId, rating) => {
         let previousSong = null
