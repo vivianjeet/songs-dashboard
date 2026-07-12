@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.db import SongRepository
 from app.entities import Song, SongSuggestion, RatingUpdate
+from app.normalize import SortColumn
 
 from typing import Literal
 from contextlib import asynccontextmanager
@@ -29,13 +30,6 @@ if allowed_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-SortColumn = Literal[
-    "id", "title", "danceability", "energy", "key", "loudness", "mode",
-    "acousticness", "instrumentalness", "liveness", "valence", "tempo",
-    "duration_ms", "time_signature", "num_bars", "num_sections",
-    "num_segments", "class", "rating",
-]
 
 class SongListResponse(BaseModel):
     items: list[Song]

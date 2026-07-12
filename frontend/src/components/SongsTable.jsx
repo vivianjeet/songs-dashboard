@@ -17,7 +17,6 @@ import {
   Box,
 } from '@mui/material'
 import { buildCsv, downloadCsv } from '../utils/csv.js'
-import { fetchSongs } from '../api/api.js'
 
 function SortTriangleIcon(props) {
   return (
@@ -89,7 +88,6 @@ export function SongsTable({
   retry,
   searchResult,
 }) {
-  const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState(false)
 
   const visibleCount =
@@ -142,17 +140,13 @@ export function SongsTable({
     </TableRow>
   )
 
-  const handleExportCsv = async () => {
-    setIsExporting(true)
+  const handleExportCsv = () => {
     setExportError(false)
     try {
-      const data = await fetchSongs({ offset: 0, limit: total ?? 100, sort, order })
-      const csv = buildCsv(COLUMNS, data.items)
+      const csv = buildCsv(COLUMNS, [...store.values()])
       downloadCsv('songs.csv', csv)
     } catch (err) {
       setExportError(true)
-    } finally {
-      setIsExporting(false)
     }
   }
 
@@ -298,8 +292,8 @@ export function SongsTable({
                 '& .MuiTablePagination-spacer': { display: 'none' },
               }}
             />
-            <Button size="small" onClick={handleExportCsv} disabled={isExporting}>
-              {isExporting ? 'Preparing CSV...' : 'Download CSV'}
+            <Button size="small" onClick={handleExportCsv}>
+              Download CSV
             </Button>
           </Box>
           {exportError && (

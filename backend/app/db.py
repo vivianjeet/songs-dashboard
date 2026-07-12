@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from app.normalize import PlaylistLoader
+from app.normalize import PlaylistLoader, SORTABLE_COLUMNS
 from app.entities import Song, SongBase, SongSuggestion
 
 class SongRepository:
@@ -43,13 +43,6 @@ class SongRepository:
         )
     """
 
-    SORTABLE_COLUMNS = {
-        "id", "title", "danceability", "energy", "key", "loudness", "mode",
-        "acousticness", "instrumentalness", "liveness", "valence", "tempo",
-        "duration_ms", "time_signature", "num_bars", "num_sections",
-        "num_segments", "class", "rating"
-    }
-
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
     
@@ -81,7 +74,7 @@ class SongRepository:
          return Song(**dict(row))
     
     def list_songs(self, offset: int, limit: int, sort: str = "id", order: str = "asc") -> tuple[list[Song], int]:
-        if sort not in self.SORTABLE_COLUMNS:
+        if sort not in SORTABLE_COLUMNS:
             raise ValueError(f"Invalid sort column: {sort}")
         direction = "DESC" if order.lower() == "desc" else "ASC"
 

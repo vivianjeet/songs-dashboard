@@ -4,6 +4,7 @@ import { AppBar, Toolbar, Typography, Box, IconButton, Button, ThemeProvider, Cs
 import Brightness4Icon from '@mui/icons-material/Brightness4'
 import Brightness7Icon from '@mui/icons-material/Brightness7'
 import { createAppTheme } from './theme/theme.js'
+import { ParticleBackground } from './components/ParticleBackground.jsx'
 
 const SongsPage = lazy(() => import('./pages/SongsPage.jsx').then((m) => ({ default: m.SongsPage })))
 const ChartsPage = lazy(() => import('./pages/ChartsPage.jsx').then((m) => ({ default: m.ChartsPage })))
@@ -20,6 +21,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <ParticleBackground />
       <Box>
         <AppBar position="static">
           <Toolbar>
