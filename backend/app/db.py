@@ -113,13 +113,11 @@ class SongRepository:
         conn = self._get_connection()
         try:
             rows = conn.execute(
-                "UPDATE songs SET rating = ? WHERE id = ?", (rating, song_id)
+                "UPDATE songs SET rating = ? WHERE id = ? RETURNING *", (rating, song_id)
             )
+            row = rows.fetchone()
             conn.commit()
-            if rows.rowcount == 0:
-                return None
-            row = conn.execute("SELECT * FROM songs WHERE id = ?", (song_id,)).fetchone()
-            return self.row_to_song(row)
+            return self.row_to_song(row) if row else None
         finally:
             conn.close()
     
