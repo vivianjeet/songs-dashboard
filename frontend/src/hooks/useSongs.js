@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchSongs } from './api.js'
+import { fetchSongs } from '../api/api.js'
+import { compareSongs } from '../utils/sortSongs.js'
 
 const PAGE_SIZE = 10
 const STORE_CAP = 100
@@ -13,6 +14,12 @@ export function useSongs() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const inFlight = useRef(new Set())
+
+    const isFullyLoadedRef = useRef(false)
+    useEffect(() => {
+        isFullyLoadedRef.current = total !== null && store.size >= total
+    }, [store, total])
+
 
     const loadRange = useCallback(
         async (start, count) => {
@@ -66,6 +73,16 @@ export function useSongs() {
     }, [page, store, total, loadRange])
 
     const setSort = useCallback((column, direction) => {
+        if (isFullyLoadedRef.current) {
+            setStore((prev) => {
+            const sorted = [...prev.values()].sort((a, b) => compareSongs(a, b, column, direction))
+            return new Map(sorted.map((song, i) => [i, song]))
+            })
+            setSortState(column)
+            setOrderState(direction)
+            setPage(0)
+            return
+        }
         setStore(new Map())
         setTotal(null)
         setPage(0)
