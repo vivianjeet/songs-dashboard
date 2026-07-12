@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchSongs } from '../api/api.js'
+import { fetchSongs, updateSongRating } from '../api/api.js'
 import { compareSongs } from '../utils/sortSongs.js'
 
 const PAGE_SIZE = 10
@@ -95,6 +95,31 @@ export function useSongs() {
         loadRange(page*PAGE_SIZE, PAGE_SIZE)
     }, [page, loadRange])
 
+    const updateRating = useCallback(async (index, songId, rating) => {
+        let previousSong = null
+        setStore((prev) => {
+            const current = prev.get(index)
+            if (!current || current.id !== songId) return prev
+            previousSong = current
+            const next = new Map(prev)
+            next.set(index, { ...current, rating })
+            return next
+        })
+
+        try {
+            await updateSongRating(songId, rating)
+        } catch (err) {
+            setError(err)
+            if (previousSong) {
+                setStore((prev) => {
+                    const next = new Map(prev)
+                    next.set(index, previousSong)
+                    return next
+                })
+            }
+        }
+    }, [])
+
     return {
         store,
         total,
@@ -106,6 +131,7 @@ export function useSongs() {
         loading,
         error,
         retry,
+        updateRating,
         isFullyLoaded: total !== null && store.size >= total
     }
 }

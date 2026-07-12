@@ -1,15 +1,18 @@
 import { createTheme } from '@mui/material/styles'
 
-export const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#00695c',
+export function createAppTheme(mode) {
+  return createTheme({
+    palette: {
+      mode,
+      primary: {
+        main: '#00695c',
+      },
     },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-  typography: {
-    fontFamily: 'Inter, sans-serif',
-  },
-})
+    shape: {
+      borderRadius: 8,
+    },
+    typography: {
+      fontFamily: 'Inter, sans-serif',
+    },
+  })
+}

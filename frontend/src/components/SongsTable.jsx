@@ -1,0 +1,201 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TableSortLabel,
+  Paper,
+  Tooltip,
+  Rating,
+} from '@mui/material'
+import { useSongs } from '../hooks/useSongs.js'
+
+function SortTriangleIcon(props) {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" {...props}>
+      <polygon points="5,0 10,10 0,10" fill="currentColor" />
+    </svg>
+  )
+}
+
+const RATING_COLUMN_WIDTH = 140
+
+const TITLE_COLUMN_WIDTH = 180
+const CHAR_WIDTH = 9.8
+const CELL_PADDING = 3
+
+function headerWidth(label) {
+  return Math.ceil(label.length * CHAR_WIDTH) + CELL_PADDING * 2
+}
+
+const COLUMNS = [
+  { key: 'title', label: 'Title' },
+  { key: 'danceability', label: 'Danceability', numeric: true },
+  { key: 'energy', label: 'Energy', numeric: true },
+  { key: 'key', label: 'Key', numeric: true },
+  { key: 'loudness', label: 'Loudness', numeric: true },
+  { key: 'mode', label: 'Mode', numeric: true },
+  { key: 'acousticness', label: 'Acousticness', numeric: true },
+  { key: 'instrumentalness', label: 'Instrumentalness', numeric: true },
+  { key: 'liveness', label: 'Liveness', numeric: true },
+  { key: 'valence', label: 'Valence', numeric: true },
+  { key: 'tempo', label: 'Tempo', numeric: true },
+  { key: 'duration_ms', label: 'Duration (ms)', numeric: true },
+  { key: 'time_signature', label: 'Time Signature', numeric: true },
+  { key: 'num_bars', label: 'Num Bars', numeric: true },
+  { key: 'num_sections', label: 'Num Sections', numeric: true },
+  { key: 'num_segments', label: 'Num Segments', numeric: true },
+  { key: 'class', label: 'Class', numeric: true },
+  { key: 'rating', label: 'Rating', numeric: true },
+].map((col) => ({
+  ...col,
+  width:
+    col.key === 'title'
+      ? TITLE_COLUMN_WIDTH
+      : col.key === 'rating'
+        ? RATING_COLUMN_WIDTH
+        : col.key === 'tempo'
+          ? headerWidth(col.label) + 24
+          : headerWidth(col.label),
+}))
+
+export const TABLE_WIDTH = COLUMNS.reduce((sum, col) => sum + col.width, 0)
+
+const PAGE_SIZE = 10
+const ROW_HEIGHT = 41
+const HEADER_HEIGHT = 68
+
+export function SongsTable() {
+  const { store, total, page, setPage, sort, order, setSort, updateRating } = useSongs()
+
+  const visibleCount =
+    total === null ? PAGE_SIZE : Math.max(0, Math.min(PAGE_SIZE, total - page * PAGE_SIZE))
+  const rows = Array.from({ length: PAGE_SIZE }, (_, slot) => {
+    if (slot >= visibleCount) return { slot, index: null, song: null }
+    const index = page * PAGE_SIZE + slot
+    return { slot, index, song: store.get(index) }
+  })
+
+  const handleSort = (column) => {
+    const direction = sort === column && order === 'asc' ? 'desc' : 'asc'
+    setSort(column, direction)
+  }
+
+  return (
+    <Paper sx={{ borderRadius: '4px' }}>
+      <Table
+        size="small"
+        sx={{
+          tableLayout: 'fixed',
+          width: TABLE_WIDTH,
+          '& th, & td': { px: '3px' },
+          '& th:first-of-type, & td:first-of-type': { pl: 2 },
+          '& th': {
+            height: HEADER_HEIGHT,
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            boxSizing: 'border-box',
+            verticalAlign: 'middle',
+          },
+          '& td': {
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            height: ROW_HEIGHT,
+            boxSizing: 'border-box',
+          },
+          '& tbody tr:nth-of-type(odd)': {
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'dark' ? theme.palette.action.hover : theme.palette.grey[50],
+          },
+        }}
+      >
+        <TableHead>
+          <TableRow>
+            {COLUMNS.map((col) => (
+              <TableCell
+                key={col.key}
+                align="center"
+                sx={{ whiteSpace: 'nowrap', width: col.width, minWidth: col.width, maxWidth: col.width }}
+              >
+                <TableSortLabel
+                  active={sort === col.key}
+                  direction={sort === col.key ? order : 'asc'}
+                  onClick={() => handleSort(col.key)}
+                  IconComponent={SortTriangleIcon}
+                  sx={{
+                    flexDirection: 'column',
+                    gap: 0.25,
+                    '& .MuiTableSortLabel-icon': { margin: 0 },
+                  }}
+                >
+                  {col.label}
+                </TableSortLabel>
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody
+          key={`${sort}-${order}-${page}`}
+          sx={{
+            opacity: 0,
+            animation: 'songs-table-fade-in 200ms ease-out forwards',
+            '@keyframes songs-table-fade-in': {
+              from: { opacity: 0 },
+              to: { opacity: 1 },
+            },
+            display: 'table-row-group',
+            minHeight: ROW_HEIGHT * PAGE_SIZE,
+          }}
+        >
+          {rows.map(({ slot, index, song }) =>
+            song ? (
+              <TableRow key={song.id} hover>
+                {COLUMNS.map((col) =>
+                  col.key === 'title' ? (
+                    <TableCell key={col.key}>
+                      <Tooltip title={song.title} enterDelay={400}>
+                        <span>{song.title}</span>
+                      </Tooltip>
+                    </TableCell>
+                  ) : col.key === 'rating' ? (
+                    <TableCell key={col.key} align="center">
+                      <Rating
+                        value={song.rating ?? 0}
+                        size="small"
+                        onChange={(_, newValue) => {
+                          if (newValue) updateRating(index, song.id, newValue)
+                        }}
+                        sx={{ '& .MuiRating-icon': { mx: 0 } }}
+                      />
+                    </TableCell>
+                  ) : (
+                    <TableCell key={col.key} align={col.numeric ? 'center' : 'left'}>
+                      {song[col.key] ?? ''}
+                    </TableCell>
+                  ),
+                )}
+              </TableRow>
+            ) : (
+              <TableRow key={`placeholder-${slot}`}>
+                {COLUMNS.map((col) => (
+                  <TableCell key={col.key} />
+                ))}
+              </TableRow>
+            ),
+          )}
+        </TableBody>
+      </Table>
+      <TablePagination
+        component="div"
+        count={total ?? 0}
+        page={page}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        rowsPerPage={PAGE_SIZE}
+        rowsPerPageOptions={[PAGE_SIZE]}
+      />
+    </Paper>
+  )
+}
