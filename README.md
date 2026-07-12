@@ -115,17 +115,17 @@ This was built to satisfy a take-home assignment, so a few things were deliberat
 
 ### Backend
 
-- FastAPI - web framework and request validation
-- Pydantic - data models and schema validation
+- FastAPI - Web framework and request validation
+- Pydantic - Data models and schema validation
 - Uvicorn - ASGI server
-- pytest - test suite
+- Pytest - Test suite
 
 ### Frontend
 
 - React - UI framework
-- React Router - client-side routing between the table and charts views
-- MUI (Material UI) - component library
-- Recharts - chart rendering
-- Vite - dev server and build tool
-- Vitest + Testing Library - test suite
-- Fontsource (Inter, Source Code Pro) - self-hosted fonts
+- React Router - Client-side routing between the table and charts views
+- MUI (Material UI) - Component library
+- Recharts - Chart rendering
+- Vite - Dev server and build tool
+- Vitest + Testing Library - Test suite
+- Fontsource (Inter, Source Code Pro) - Self-hosted fonts
