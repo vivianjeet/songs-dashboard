@@ -2,7 +2,7 @@
 
 A full-stack dashboard for exploring a playlist dataset: a sortable, paginated song table with title search, star ratings, CSV export, and charts covering danceability, duration, acousticness, and tempo. The backend normalizes a columnar JSON dataset into SQLite on startup and serves it through a REST API; the frontend is a React single-page app with client-side routing between the table view and the charts view.
 
-Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboard-frontend.onrender.com) (backend API at [https://songs-dashboard-mg3x.onrender.com](https://songs-dashboard-mg3x.onrender.com))
+Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboard-frontend.onrender.com) (backend API docs at [https://songs-dashboard-mg3x.onrender.com/docs](https://songs-dashboard-mg3x.onrender.com/docs))
 
 Both services run on Render's free tier and sleep after inactivity. The first request after a period of idle time can take 30 to 60 seconds while the instance wakes up; subsequent requests are fast.
 
@@ -97,6 +97,14 @@ npm test
 
 Covers the sort comparator, duration histogram binning, CSV field escaping, and the search-input debounce hook.
 
+Both test suites also run automatically in GitHub Actions on any pull request targeting `main` (`.github/workflows/ci.yml`).
+
 ## Toward Production
 
-This was built to satisfy a take-home assignment, so a few things were deliberately left out that a real production system would need. There is no authentication, so the API is open and ratings are global rather than tied to a user. SQLite works well for a fixed, small dataset like this one, but a production deployment with concurrent writers would need a real database such as Postgres. Pagination is offset-based, which is fine here but would need to move to cursor-based pagination on a dataset that grows or changes while paginating. The rating endpoint has no audit trail, so there is no record of who changed what or when. There is no CI pipeline gating commits on tests or linting, and no monitoring or error tracking on the deployed services, so a real failure would only surface if someone happened to notice it.
+This was built to satisfy a take-home assignment, so a few things were deliberately left out that a real production system would need.
+
+- No authentication. The API is open and ratings are global rather than tied to a user.
+- SQLite instead of a real database. It works well for a fixed, small dataset like this one, but a production deployment with concurrent writers would need something like Postgres.
+- Offset-based pagination. Fine here, but would need to move to cursor-based pagination on a dataset that grows or changes while paginating.
+- No audit trail on the rating endpoint. There is no record of who changed what or when.
+- No monitoring or error tracking on the deployed services, so a real failure would only surface if someone happened to notice it.
