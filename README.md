@@ -4,7 +4,7 @@ A full-stack dashboard for exploring a playlist dataset: a sortable, paginated s
 
 Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboard-frontend.onrender.com)
 
-Backend API docs at: [https://songs-dashboard-mg3x.onrender.com/docs](https://songs-dashboard-mg3x.onrender.com/docs)
+Backend API docs: [https://songs-dashboard-mg3x.onrender.com/docs](https://songs-dashboard-mg3x.onrender.com/docs)
 
 Both services run on Render's free tier and sleep after inactivity. The first request after a period of idle time can take 30 to 60 seconds while the instance wakes up; subsequent requests are fast.
 
