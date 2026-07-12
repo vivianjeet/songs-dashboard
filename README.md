@@ -6,7 +6,7 @@ Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboa
 
 Backend API docs: [https://songs-dashboard-mg3x.onrender.com/docs](https://songs-dashboard-mg3x.onrender.com/docs)
 
-Both services run on Render's free tier and sleep after inactivity. The first request after a period of idle time can take 30 to 60 seconds while the instance wakes up; subsequent requests are fast.
+Both services run on Render's free tier and sleep after inactivity. The first request after a period of idle time can take 30 to 60 seconds while the instance wakes up; subsequent requests are fast. If the backend has been idle, open its `/docs` link above directly first to wake it before using the live demo, since the frontend's first API call may time out while the backend is still starting.
 
 ## Running with Docker
 
@@ -110,3 +110,22 @@ This was built to satisfy a take-home assignment, so a few things were deliberat
 - Offset-based pagination. Fine here, but would need to move to cursor-based pagination on a dataset that grows or changes while paginating.
 - No audit trail on the rating endpoint. There is no record of who changed what or when.
 - No monitoring or error tracking on the deployed services, so a real failure would only surface if someone happened to notice it.
+
+## Libraries Used
+
+### Backend
+
+- FastAPI - web framework and request validation
+- Pydantic - data models and schema validation
+- Uvicorn - ASGI server
+- pytest - test suite
+
+### Frontend
+
+- React - UI framework
+- React Router - client-side routing between the table and charts views
+- MUI (Material UI) - component library
+- Recharts - chart rendering
+- Vite - dev server and build tool
+- Vitest + Testing Library - test suite
+- Fontsource (Inter, Source Code Pro) - self-hosted fonts

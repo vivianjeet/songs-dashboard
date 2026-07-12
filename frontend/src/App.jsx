@@ -23,9 +23,9 @@ function App() {
       <CssBaseline />
       <ParticleBackground />
       <Box>
-        <AppBar position="static">
+        <AppBar position="fixed" sx={{ top: 0, left: 0, right: 0 }}>
           <Toolbar>
-            <Typography variant="h6" component="h1" sx={{ mr: 4 }}>
+            <Typography variant="h6" component="h1" sx={{ mr: 4, fontFamily: 'Inter, sans-serif' }}>
               Songs Dashboard
             </Typography>
             <Button
@@ -50,6 +50,7 @@ function App() {
             </IconButton>
           </Toolbar>
         </AppBar>
+        <Toolbar />
         <Suspense
           fallback={
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>

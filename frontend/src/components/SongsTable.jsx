@@ -160,6 +160,11 @@ export function SongsTable({
         height: paperHeight,
         overflow: 'hidden',
         transition: 'height 250ms ease',
+        backgroundColor: (theme) =>
+          theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.55)' : 'rgba(255, 255, 255, 0.55)',
+        backdropFilter: 'blur(10px)',
+        border: (theme) =>
+          `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
       }}
     >
       <Table
@@ -173,6 +178,7 @@ export function SongsTable({
             height: HEADER_HEIGHT,
             fontSize: '0.95rem',
             fontWeight: 700,
+            fontFamily: 'Inter, sans-serif',
             boxSizing: 'border-box',
             verticalAlign: 'middle',
           },
@@ -185,7 +191,7 @@ export function SongsTable({
           },
           '& tbody tr:nth-of-type(odd)': {
             backgroundColor: (theme) =>
-              theme.palette.mode === 'dark' ? theme.palette.action.hover : theme.palette.grey[50],
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
           },
         }}
       >
