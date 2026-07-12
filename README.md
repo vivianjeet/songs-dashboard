@@ -2,7 +2,23 @@
 
 A full-stack dashboard for exploring a playlist dataset: a sortable, paginated song table with title search, star ratings, CSV export, and charts covering danceability, duration, acousticness, and tempo. The backend normalizes a columnar JSON dataset into SQLite on startup and serves it through a REST API; the frontend is a React single-page app with client-side routing between the table view and the charts view.
 
-Live demo: TBD
+Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboard-frontend.onrender.com) (backend API at [https://songs-dashboard-mg3x.onrender.com](https://songs-dashboard-mg3x.onrender.com))
+
+Both services run on Render's free tier and sleep after inactivity. The first request after a period of idle time can take 30 to 60 seconds while the instance wakes up; subsequent requests are fast.
+
+## Running with Docker
+
+From the repository root, build and run each service:
+
+```
+docker build -t songs-backend ./backend
+docker run -p 8000:8000 songs-backend
+
+docker build --build-arg VITE_API_URL=http://127.0.0.1:8000 -t songs-frontend ./frontend
+docker run -p 8080:80 songs-frontend
+```
+
+The backend is served at `http://127.0.0.1:8000` and the frontend at `http://127.0.0.1:8080`. `VITE_API_URL` is a build-time argument since Vite bakes it into the static bundle; the frontend image must be rebuilt if the backend's address changes.
 
 ## Running without Docker
 
@@ -13,7 +29,23 @@ Requires Python 3.12.
 ```
 cd backend
 python -m venv venv
+```
+
+On Windows:
+
+```
 venv\Scripts\Activate.ps1
+```
+
+On macOS/Linux:
+
+```
+source venv/bin/activate
+```
+
+Then, on either platform:
+
+```
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
@@ -49,9 +81,10 @@ All endpoints are prefixed with `/api`.
 
 ```
 cd backend
-venv\Scripts\Activate.ps1
 pytest
 ```
+
+(activate the virtual environment first, as shown above)
 
 Covers dataset normalization, repository-level database operations, and all API endpoints (list, pagination bounds, search hit/miss, rating happy path/validation).
 
@@ -63,3 +96,7 @@ npm test
 ```
 
 Covers the sort comparator, duration histogram binning, CSV field escaping, and the search-input debounce hook.
+
+## Toward Production
+
+This was built to satisfy a take-home assignment, so a few things were deliberately left out that a real production system would need. There is no authentication, so the API is open and ratings are global rather than tied to a user. SQLite works well for a fixed, small dataset like this one, but a production deployment with concurrent writers would need a real database such as Postgres. Pagination is offset-based, which is fine here but would need to move to cursor-based pagination on a dataset that grows or changes while paginating. The rating endpoint has no audit trail, so there is no record of who changed what or when. There is no CI pipeline gating commits on tests or linting, and no monitoring or error tracking on the deployed services, so a real failure would only surface if someone happened to notice it.
