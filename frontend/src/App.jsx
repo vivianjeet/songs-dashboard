@@ -1,24 +1,16 @@
 import { useMemo, useState } from 'react'
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Container,
-  Box,
-  IconButton,
-  ThemeProvider,
-  CssBaseline,
-} from '@mui/material'
+import { Routes, Route, Link, useLocation } from 'react-router-dom'
+import { AppBar, Toolbar, Typography, Box, IconButton, Button, ThemeProvider, CssBaseline } from '@mui/material'
 import Brightness4Icon from '@mui/icons-material/Brightness4'
 import Brightness7Icon from '@mui/icons-material/Brightness7'
 import { createAppTheme } from './theme/theme.js'
-import { SongsTable, TABLE_WIDTH } from './components/SongsTable.jsx'
-
-const CONTENT_PADDING = 48
+import { SongsPage } from './pages/SongsPage.jsx'
+import { ChartsPage } from './pages/ChartsPage.jsx'
 
 function App() {
   const [mode, setMode] = useState('light')
   const theme = useMemo(() => createAppTheme(mode), [mode])
+  const location = useLocation()
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'light' ? 'dark' : 'light'))
@@ -27,28 +19,38 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh', minWidth: TABLE_WIDTH + CONTENT_PADDING, position: 'relative' }}>
+      <Box>
         <AppBar position="static">
           <Toolbar>
-            <Typography variant="h6" component="h1" sx={{ flex: 1 }}>
+            <Typography variant="h6" component="h1" sx={{ mr: 4 }}>
               Songs Dashboard
             </Typography>
+            <Button
+              component={Link}
+              to="/"
+              color="inherit"
+              sx={{ fontWeight: location.pathname === '/' ? 700 : 400 }}
+            >
+              Home
+            </Button>
+            <Button
+              component={Link}
+              to="/charts"
+              color="inherit"
+              sx={{ fontWeight: location.pathname === '/charts' ? 700 : 400 }}
+            >
+              Charts
+            </Button>
+            <Box sx={{ flex: 1 }} />
             <IconButton onClick={toggleMode} color="inherit" aria-label="toggle dark mode">
               {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
             </IconButton>
           </Toolbar>
         </AppBar>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 'calc(35vh - 269px)',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            px: 3,
-          }}
-        >
-          <SongsTable />
-        </Box>
+        <Routes>
+          <Route path="/" element={<SongsPage />} />
+          <Route path="/charts" element={<ChartsPage />} />
+        </Routes>
       </Box>
     </ThemeProvider>
   )

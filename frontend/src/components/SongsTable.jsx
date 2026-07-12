@@ -15,7 +15,6 @@ import {
   Button,
   Box,
 } from '@mui/material'
-import { useSongs } from '../hooks/useSongs.js'
 
 function SortTriangleIcon(props) {
   return (
@@ -71,11 +70,22 @@ export const TABLE_WIDTH = COLUMNS.reduce((sum, col) => sum + col.width, 0)
 const PAGE_SIZE = 10
 const ROW_HEIGHT = 41
 const HEADER_HEIGHT = 68
+const PAGINATION_HEIGHT = 52
 
-export function SongsTable() {
-  const { store, total, page, setPage, sort, order, setSort, updateRating, loading, error, retry } =
-    useSongs()
-
+export function SongsTable({
+  store,
+  total,
+  page,
+  setPage,
+  sort,
+  order,
+  setSort,
+  updateRating,
+  loading,
+  error,
+  retry,
+  searchResult,
+}) {
   const visibleCount =
     total === null ? PAGE_SIZE : Math.max(0, Math.min(PAGE_SIZE, total - page * PAGE_SIZE))
   const rows = Array.from({ length: PAGE_SIZE }, (_, slot) => {
@@ -84,13 +94,59 @@ export function SongsTable() {
     return { slot, index, song: store.get(index) }
   })
 
+  const findStoreIndex = (songId) => {
+    for (const [idx, song] of store.entries()) {
+      if (song.id === songId) return idx
+    }
+    return -1
+  }
+
   const handleSort = (column) => {
     const direction = sort === column && order === 'asc' ? 'desc' : 'asc'
     setSort(column, direction)
   }
 
+  const renderSongRow = (song, index) => (
+    <TableRow key={song.id} hover>
+      {COLUMNS.map((col) =>
+        col.key === 'title' ? (
+          <TableCell key={col.key}>
+            <Tooltip title={song.title} enterDelay={400}>
+              <span>{song.title}</span>
+            </Tooltip>
+          </TableCell>
+        ) : col.key === 'rating' ? (
+          <TableCell key={col.key} align="center">
+            <Rating
+              value={song.rating ?? 0}
+              size="small"
+              onChange={(_, newValue) => {
+                if (newValue) updateRating(index, song.id, newValue)
+              }}
+              sx={{ '& .MuiRating-icon': { mx: 0 } }}
+            />
+          </TableCell>
+        ) : (
+          <TableCell key={col.key} align={col.numeric ? 'center' : 'left'}>
+            {song[col.key] ?? ''}
+          </TableCell>
+        ),
+      )}
+    </TableRow>
+  )
+
+  const bodyHeight = searchResult ? ROW_HEIGHT : ROW_HEIGHT * PAGE_SIZE
+  const paperHeight = HEADER_HEIGHT + bodyHeight + (searchResult ? 0 : PAGINATION_HEIGHT)
+
   return (
-    <Paper sx={{ borderRadius: '4px' }}>
+    <Paper
+      sx={{
+        borderRadius: '4px',
+        height: paperHeight,
+        overflow: 'hidden',
+        transition: 'height 250ms ease',
+      }}
+    >
       <Table
         size="small"
         sx={{
@@ -153,10 +209,12 @@ export function SongsTable() {
               to: { opacity: 1 },
             },
             display: 'table-row-group',
-            minHeight: ROW_HEIGHT * PAGE_SIZE,
+            minHeight: bodyHeight,
           }}
         >
-          {error ? (
+          {searchResult ? (
+            renderSongRow(searchResult, findStoreIndex(searchResult.id))
+          ) : error ? (
             <TableRow>
               <TableCell colSpan={COLUMNS.length} sx={{ border: 0, py: 6 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -184,32 +242,7 @@ export function SongsTable() {
           ) : (
             rows.map(({ slot, index, song }) =>
               song ? (
-                <TableRow key={song.id} hover>
-                  {COLUMNS.map((col) =>
-                    col.key === 'title' ? (
-                      <TableCell key={col.key}>
-                        <Tooltip title={song.title} enterDelay={400}>
-                          <span>{song.title}</span>
-                        </Tooltip>
-                      </TableCell>
-                    ) : col.key === 'rating' ? (
-                      <TableCell key={col.key} align="center">
-                        <Rating
-                          value={song.rating ?? 0}
-                          size="small"
-                          onChange={(_, newValue) => {
-                            if (newValue) updateRating(index, song.id, newValue)
-                          }}
-                          sx={{ '& .MuiRating-icon': { mx: 0 } }}
-                        />
-                      </TableCell>
-                    ) : (
-                      <TableCell key={col.key} align={col.numeric ? 'center' : 'left'}>
-                        {song[col.key] ?? ''}
-                      </TableCell>
-                    ),
-                  )}
-                </TableRow>
+                renderSongRow(song, index)
               ) : (
                 <TableRow key={`placeholder-${slot}`}>
                   {COLUMNS.map((col) => (
@@ -225,14 +258,20 @@ export function SongsTable() {
           )}
         </TableBody>
       </Table>
-      <TablePagination
-        component="div"
-        count={total ?? 0}
-        page={page}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        rowsPerPage={PAGE_SIZE}
-        rowsPerPageOptions={[PAGE_SIZE]}
-      />
+      {!searchResult && (
+        <TablePagination
+          component="div"
+          count={total ?? 0}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={PAGE_SIZE}
+          rowsPerPageOptions={[PAGE_SIZE]}
+          sx={{
+            '& .MuiTablePagination-toolbar': { justifyContent: 'flex-start' },
+            '& .MuiTablePagination-spacer': { display: 'none' },
+          }}
+        />
+      )}
     </Paper>
   )
 }
