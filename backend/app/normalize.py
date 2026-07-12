@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from app.entities import SongBase
+from typing import Literal, get_args
 
 class PlaylistLoader:
     PLAYLIST_PATH = Path(__file__).resolve().parent.parent / "playlist.json"
@@ -21,3 +22,12 @@ class PlaylistLoader:
             rows.append(SongBase(**raw))
         
         return rows
+
+SortColumn = Literal[
+    "id", "title", "danceability", "energy", "key", "loudness", "mode",
+    "acousticness", "instrumentalness", "liveness", "valence", "tempo",
+    "duration_ms", "time_signature", "num_bars", "num_sections",
+    "num_segments", "class", "rating",
+]
+
+SORTABLE_COLUMNS = set(get_args(SortColumn))

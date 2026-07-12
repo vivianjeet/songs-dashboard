@@ -17,7 +17,7 @@ export function useSongs() {
         setLoading(true)
         setError(null)
         try {
-            const data = await fetchSongs({ offset: 0, limit: 100, sort, order })
+            const data = await fetchSongs({ offset: 0, limit: 100, sort: 'id', order: 'asc' })
             setStore(new Map(data.items.map((song, i) => [i, song])))
             setTotal(data.total)
         } catch (err) {
@@ -25,7 +25,7 @@ export function useSongs() {
         } finally {
             setLoading(false)
         }
-    }, [sort, order])
+    }, [])
 
     useEffect(() => {
         loadAll()
