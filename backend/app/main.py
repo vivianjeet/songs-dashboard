@@ -1,4 +1,7 @@
+import os
+
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.db import SongRepository
@@ -16,6 +19,16 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+allowed_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins.split(","),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 SortColumn = Literal[
     "id", "title", "danceability", "energy", "key", "loudness", "mode",
