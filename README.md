@@ -2,7 +2,9 @@
 
 A full-stack dashboard for exploring a playlist dataset: a sortable, paginated song table with title search, star ratings, CSV export, and charts covering danceability, duration, acousticness, and tempo. The backend normalizes a columnar JSON dataset into SQLite on startup and serves it through a REST API; the frontend is a React single-page app with client-side routing between the table view and the charts view.
 
-Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboard-frontend.onrender.com) (backend API docs at [https://songs-dashboard-mg3x.onrender.com/docs](https://songs-dashboard-mg3x.onrender.com/docs))
+Live demo: [https://songs-dashboard-frontend.onrender.com](https://songs-dashboard-frontend.onrender.com)
+
+Backend API docs at: [https://songs-dashboard-mg3x.onrender.com/docs](https://songs-dashboard-mg3x.onrender.com/docs)
 
 Both services run on Render's free tier and sleep after inactivity. The first request after a period of idle time can take 30 to 60 seconds while the instance wakes up; subsequent requests are fast.
 
