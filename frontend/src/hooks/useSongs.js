@@ -50,7 +50,15 @@ export function useSongs() {
         },[sort, order, page]
     )
 
+    const initialLoadStartedRef = useRef(false)
     useEffect(() => {
+        if (initialLoadStartedRef.current) return
+        initialLoadStartedRef.current = true
+        loadRange(0, STORE_CAP)
+    }, [loadRange])
+
+    useEffect(() => {
+        if (!initialLoadStartedRef.current) return
         const windowStart = Math.max(0, (page - 1)*PAGE_SIZE)
         const windowEnd = total === null ? (page + 2) * PAGE_SIZE : Math.min(total, (page + 2) * PAGE_SIZE)
 

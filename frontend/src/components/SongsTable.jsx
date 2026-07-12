@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Table,
   TableBody,
@@ -16,6 +17,7 @@ import {
   Box,
 } from '@mui/material'
 import { buildCsv, downloadCsv } from '../utils/csv.js'
+import { fetchSongs } from '../api/api.js'
 
 function SortTriangleIcon(props) {
   return (
@@ -87,6 +89,8 @@ export function SongsTable({
   retry,
   searchResult,
 }) {
+  const [isExporting, setIsExporting] = useState(false)
+
   const visibleCount =
     total === null ? PAGE_SIZE : Math.max(0, Math.min(PAGE_SIZE, total - page * PAGE_SIZE))
   const rows = Array.from({ length: PAGE_SIZE }, (_, slot) => {
@@ -137,10 +141,15 @@ export function SongsTable({
     </TableRow>
   )
 
-  const handleExportCsv = () => {
-    const visibleSongs = rows.map((r) => r.song).filter(Boolean)
-    const csv = buildCsv(COLUMNS, visibleSongs)
-    downloadCsv(`songs-page-${page + 1}.csv`, csv)
+  const handleExportCsv = async () => {
+    setIsExporting(true)
+    try {
+      const data = await fetchSongs({ offset: 0, limit: total ?? 100, sort, order })
+      const csv = buildCsv(COLUMNS, data.items)
+      downloadCsv('songs.csv', csv)
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const bodyHeight = searchResult ? ROW_HEIGHT : ROW_HEIGHT * PAGE_SIZE
@@ -284,8 +293,8 @@ export function SongsTable({
               '& .MuiTablePagination-spacer': { display: 'none' },
             }}
           />
-          <Button size="small" onClick={handleExportCsv}>
-            Download CSV
+          <Button size="small" onClick={handleExportCsv} disabled={isExporting}>
+            {isExporting ? 'Preparing CSV...' : 'Download CSV'}
           </Button>
         </Box>
       )}
