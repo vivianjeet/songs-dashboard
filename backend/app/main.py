@@ -5,10 +5,17 @@ from app.db import SongRepository
 from app.entities import Song, SongSuggestion, RatingUpdate
 
 from typing import Literal
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+
 repository = SongRepository()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    repository.init_db()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 SortColumn = Literal[
     "id", "title", "danceability", "energy", "key", "loudness", "mode",
@@ -20,10 +27,6 @@ SortColumn = Literal[
 class SongListResponse(BaseModel):
     items: list[Song]
     total: int
-
-@app.on_event("startup")
-def startup() -> None:
-    repository.init_db()
 
 @app.get("/api/songs", response_model=SongListResponse)
 def get_songs(
