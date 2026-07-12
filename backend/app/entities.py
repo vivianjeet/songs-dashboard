@@ -23,3 +23,7 @@ class SongBase(BaseModel):
 
 class Song(SongBase):
     rating: int | None = None
+
+class SongSuggestion(BaseModel):
+    id: str
+    title: str

@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 
 from app.normalize import PlaylistLoader
-from app.entities import Song, SongBase
+from app.entities import Song, SongBase, SongSuggestion
 
 class SongRepository:
     DB_PATH = Path(__file__).resolve().parent.parent / "songs.db"
@@ -93,5 +93,25 @@ class SongRepository:
             ).fetchall()
             songs = [self.row_to_song(row) for row in rows]
             return songs, total
+        finally:
+            conn.close()
+    
+    def search_by_title(self, title: str) -> Song | None:
+        conn = self._get_connection()
+        try:
+            row = conn.execute(
+                "SELECT * FROM songs WHERE title = ? COLLATE NOCASE", (title,)
+            ).fetchone()
+            return self.row_to_song(row) if row else None
+        finally:
+            conn.close()
+    
+    def suggest_titles(self, query: str, limit: int = 10) -> list[SongSuggestion]:
+        conn = self._get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT id, title FROM songs WHERE title LIKE ? COLLATE NOCASE ORDER BY title LIMIT ?",(f"%{query}%", limit)
+            ).fetchall()
+            return [SongSuggestion(id=row["id"], title=row["title"]) for row in rows]
         finally:
             conn.close()

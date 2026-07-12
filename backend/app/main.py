@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 
 from app.db import SongRepository
-from app.entities import Song
+from app.entities import Song, SongSuggestion
 
 from typing import Literal
 
@@ -34,3 +34,14 @@ def get_songs(
 ) -> SongListResponse:
     songs, total = repository.list_songs(offset, limit, sort, order)
     return SongListResponse(items=songs, total=total)
+
+@app.get("/api/songs/search", response_model=Song)
+def search_songs(title: str = Query(...)) -> Song:
+    song = repository.search_by_title(title)
+    if song is None:
+        raise HTTPException(status_code=404, detail=f"Song with title '{title}' not found")
+    return song
+
+@app.get("/api/songs/suggestions", response_model=list[SongSuggestion])
+def suggest_songs(title: str = Query(..., min_length=1)) -> list[SongSuggestion]:
+    return repository.suggest_titles(title)
