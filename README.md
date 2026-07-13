@@ -72,7 +72,7 @@ All endpoints are prefixed with `/api`.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/songs` | Paginated song list. Query params: `offset` (default 0), `limit` (default 10, max 100), `sort` (any column name, default `id`), `order` (`asc` or `desc`, default `asc`). Returns `{ items, total }`. |
+| GET | `/songs` | Paginated song list. Query params: `offset` (default 0), `limit` (default 10, max 1000), `sort` (any column name, default `id`), `order` (`asc` or `desc`, default `asc`). Returns `{ items, total }`. |
 | GET | `/songs/search` | Exact-match title lookup. Query param: `title` (required). Returns the full song object, or 404 if no exact match. |
 | GET | `/songs/suggestions` | Partial-match title lookup for typeahead. Query param: `title` (required, min length 1). Returns up to 10 `{ id, title }` matches. |
 | PUT | `/songs/{song_id}/rating` | Sets a song's rating. Body: `{ "rating": <int 1-5> }`. Returns the updated song, or 404 if the id does not exist. |
@@ -88,7 +88,7 @@ On the frontend, `SongsContext` (`frontend/src/context/SongsContext.jsx`) fetche
 - **Sorting** re-fetches from the server with the new `sort`/`order`, since the client only holds a window of rows, not the full ordering — unless every row is already cached locally (see below), in which case it sorts the existing rows in memory instead of making a network call.
 - The client-side page cache is capped at **500 rows**. Once exceeded, the oldest-fetched pages are evicted first (the currently visible page and its prefetched neighbor are never evicted).
 
-Some features — the charts view and CSV export — need the entire dataset, not a window of it. Both call a `loadAll()` that fetches every row in one request and fills the cache completely, bypassing the normal per-page fetching and eviction. If the cache is already complete (e.g. Charts is opened right after a CSV export, or vice versa), `loadAll()` is a no-op — it checks the actual cache size against the known total rather than an internal flag, so opening one after the other never makes a redundant API call.
+Some features — the charts view and CSV export — need the entire dataset, not a window of it. Both call a `loadAll()` that pages through the server in 1000-row requests, accumulating until the server-reported total is reached, and fills the cache completely, bypassing the normal per-page fetching and eviction. This is correct for any dataset size rather than assuming everything fits in one request. If the cache is already complete (e.g. Charts is opened right after a CSV export, or vice versa), `loadAll()` is a no-op — it checks the actual cache size against the known total rather than an internal flag, so opening one after the other never makes a redundant API call.
 
 ## Testing
 
