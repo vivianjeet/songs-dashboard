@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 from app.normalize import PlaylistLoader, SORTABLE_COLUMNS
@@ -46,23 +47,24 @@ class SongRepository:
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
     
-    def _get_connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connection(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        return conn
-    
-    def init_db(self) -> None:
-        conn = self._get_connection()
         try:
+            yield conn
+        finally:
+            conn.close()
+
+    def init_db(self) -> None:
+        with self._connection() as conn:
             conn.execute(self.SCHEMA)
             conn.commit()
             row_count = conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
             if row_count == 0:
-                songs: list[SongBase]= PlaylistLoader().load()
+                songs: list[SongBase] = PlaylistLoader().load()
                 self._insert_songs(conn, songs)
-        finally:
-            conn.close()
-    
+
     def _insert_songs(self, conn: sqlite3.Connection, songs: list[SongBase]) -> None:
         for song in songs:
             values = song.model_dump(by_alias=True)
@@ -78,46 +80,33 @@ class SongRepository:
             raise ValueError(f"Invalid sort column: {sort}")
         direction = "DESC" if order.lower() == "desc" else "ASC"
 
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             total = conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
             rows = conn.execute(
                 f"SELECT * FROM songs ORDER BY {sort} {direction} LIMIT ? OFFSET ?", (limit, offset)
             ).fetchall()
             songs = [self.row_to_song(row) for row in rows]
             return songs, total
-        finally:
-            conn.close()
-    
+
     def search_by_title(self, title: str) -> Song | None:
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM songs WHERE title = ? COLLATE NOCASE", (title,)
             ).fetchone()
             return self.row_to_song(row) if row else None
-        finally:
-            conn.close()
-    
+
     def suggest_titles(self, query: str, limit: int = 10) -> list[SongSuggestion]:
-        conn = self._get_connection()
-        try:
+        with self._connection() as conn:
             rows = conn.execute(
-                "SELECT id, title FROM songs WHERE title LIKE ? COLLATE NOCASE ORDER BY title LIMIT ?",(f"%{query}%", limit)
+                "SELECT id, title FROM songs WHERE title LIKE ? COLLATE NOCASE ORDER BY title LIMIT ?", (f"%{query}%", limit)
             ).fetchall()
             return [SongSuggestion(id=row["id"], title=row["title"]) for row in rows]
-        finally:
-            conn.close()
-    
+
     def update_rating(self, song_id: str, rating: int) -> Song | None:
-        conn = self._get_connection()
-        try:
-            rows = conn.execute(
+        with self._connection() as conn:
+            cursor = conn.execute(
                 "UPDATE songs SET rating = ? WHERE id = ? RETURNING *", (rating, song_id)
             )
-            row = rows.fetchone()
+            row = cursor.fetchone()
             conn.commit()
             return self.row_to_song(row) if row else None
-        finally:
-            conn.close()
-    
