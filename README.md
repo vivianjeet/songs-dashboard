@@ -77,6 +77,19 @@ All endpoints are prefixed with `/api`.
 | GET | `/songs/suggestions` | Partial-match title lookup for typeahead. Query param: `title` (required, min length 1). Returns up to 10 `{ id, title }` matches. |
 | PUT | `/songs/{song_id}/rating` | Sets a song's rating. Body: `{ "rating": <int 1-5> }`. Returns the updated song, or 404 if the id does not exist. |
 
+## Pagination and Data Loading
+
+Pagination happens on the server: `GET /api/songs` accepts `offset`/`limit`/`sort`/`order` and the database does the `ORDER BY`/`LIMIT`/`OFFSET` work, so the client never needs the whole dataset just to render one page of the table.
+
+On the frontend, `SongsContext` (`frontend/src/context/SongsContext.jsx`) fetches only what's needed to show the table, plus one page ahead:
+
+- **Initial load** fetches `offset=0, limit=20` in a single request — the 10 rows for page 1, and the next 10 (page 2) already warmed in the same round trip.
+- **Every subsequent page change** fetches just that page (`limit=10`) if it isn't already cached, and then silently prefetches the page after it in the background so it's ready before the user clicks Next again.
+- **Sorting** re-fetches from the server with the new `sort`/`order`, since the client only holds a window of rows, not the full ordering — unless every row is already cached locally (see below), in which case it sorts the existing rows in memory instead of making a network call.
+- The client-side page cache is capped at **500 rows**. Once exceeded, the oldest-fetched pages are evicted first (the currently visible page and its prefetched neighbor are never evicted).
+
+Some features — the charts view and CSV export — need the entire dataset, not a window of it. Both call a `loadAll()` that fetches every row in one request and fills the cache completely, bypassing the normal per-page fetching and eviction. If the cache is already complete (e.g. Charts is opened right after a CSV export, or vice versa), `loadAll()` is a no-op — it checks the actual cache size against the known total rather than an internal flag, so opening one after the other never makes a redundant API call.
+
 ## Testing
 
 ### Backend
@@ -97,9 +110,18 @@ cd frontend
 npm test
 ```
 
-Covers the sort comparator, duration histogram binning, CSV field escaping, and the search-input debounce hook.
+Covers the sort comparator (used for in-memory sorting once the full dataset is cached), duration histogram binning, CSV field escaping, the search-input debounce hook, and `SongsContext`'s windowed pagination — initial fetch, page navigation with prefetch, cache reuse on revisited pages, sort-triggered server re-fetch vs. in-memory sort, cache eviction past the 500-row cap, and `loadAll`'s fetch-once/no-op-when-already-full behavior.
 
-Both test suites also run automatically in GitHub Actions on any pull request targeting `main` (`.github/workflows/ci.yml`).
+## CI/CD
+
+Both test suites run automatically in GitHub Actions on any pull request targeting `main` (`.github/workflows/ci.yml`), as two independent jobs:
+
+- **`backend-tests`**: Python 3.12, `pip install -r requirements.txt`, then `pytest`.
+- **`frontend-tests`**: Node 20 (with npm's cache keyed on `frontend/package-lock.json`), `npm ci`, `npm test`, then `npm run build` — the build step also catches anything `npm test` wouldn't (e.g. a broken import that only fails at bundle time).
+
+There is no deployment step in this workflow. Render is configured to auto-deploy each service directly from GitHub on pushes to `main` (via Render's dashboard, not a step in `ci.yml`), so a merge to `main` triggers a live redeploy of whichever service(s) changed once CI has already passed on the pull request.
+
+The working branch model is `develop` → PR → `main`: changes are committed to `develop`, opened as a pull request into `main` (which is what CI runs against), and merged once both jobs pass.
 
 ## Toward Production
 
