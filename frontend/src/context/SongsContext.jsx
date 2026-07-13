@@ -195,27 +195,32 @@ export function SongsProvider({ children }) {
   }, [])
 
   const updateRating = useCallback(async (index, songId, rating) => {
-    let previousSong = null
+    const previousSong = storeRef.current.get(index)
+    if (!previousSong || previousSong.id !== songId) return
+
     setStore((prev) => {
-      const current = prev.get(index)
-      if (!current || current.id !== songId) return prev
-      previousSong = current
       const next = new Map(prev)
-      next.set(index, { ...current, rating })
+      next.set(index, { ...previousSong, rating })
       return next
     })
 
     try {
-      await updateSongRating(songId, rating)
+      const updatedSong = await updateSongRating(songId, rating)
+      setStore((prev) => {
+        const current = prev.get(index)
+        if (!current || current.id !== songId) return prev
+        if (current.rating === updatedSong.rating) return prev
+        const next = new Map(prev)
+        next.set(index, updatedSong)
+        return next
+      })
     } catch (err) {
       setError(err)
-      if (previousSong) {
-        setStore((prev) => {
-          const next = new Map(prev)
-          next.set(index, previousSong)
-          return next
-        })
-      }
+      setStore((prev) => {
+        const next = new Map(prev)
+        next.set(index, previousSong)
+        return next
+      })
     }
   }, [])
 
