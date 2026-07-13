@@ -38,7 +38,7 @@ class SongListResponse(BaseModel):
 @app.get("/api/songs", response_model=SongListResponse)
 def get_songs(
     offset: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=10000),
     sort: SortColumn = Query("id"),
     order: Literal["asc", "desc"] = Query("asc"),
 ) -> SongListResponse:
