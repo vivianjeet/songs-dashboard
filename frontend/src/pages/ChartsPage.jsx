@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Box, Tabs, Tab, Alert, CircularProgress } from '@mui/material'
 import { useSongsContext } from '../context/SongsContext.jsx'
 import { DanceabilityScatter } from '../components/charts/DanceabilityScatter.jsx'
@@ -14,9 +14,14 @@ const CHARTS = [
 ]
 
 export function ChartsPage() {
-  const { store, loading, error } = useSongsContext()
+  const { store, loading, error, loadAll, isFullyLoaded } = useSongsContext()
   const songs = useMemo(() => [...store.values()], [store])
   const [activeChart, setActiveChart] = useState(CHARTS[0].key)
+
+  useEffect(() => {
+    loadAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const ActiveChartComponent = CHARTS.find((c) => c.key === activeChart).Component
 
@@ -28,12 +33,12 @@ export function ChartsPage() {
         ))}
       </Tabs>
       <Box sx={{ p: 3, width: '100%', maxWidth: 800 }}>
-        {loading ? (
+        {error ? (
+          <Alert severity="error">Failed to load chart data: {error.message}</Alert>
+        ) : loading || !isFullyLoaded ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
-        ) : error ? (
-          <Alert severity="error">Failed to load chart data: {error.message}</Alert>
         ) : (
           <ActiveChartComponent songs={songs} />
         )}

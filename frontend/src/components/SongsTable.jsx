@@ -87,8 +87,10 @@ export function SongsTable({
   error,
   retry,
   searchResult,
+  loadAll,
 }) {
   const [exportError, setExportError] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const visibleCount =
     total === null ? PAGE_SIZE : Math.max(0, Math.min(PAGE_SIZE, total - page * PAGE_SIZE))
@@ -140,13 +142,17 @@ export function SongsTable({
     </TableRow>
   )
 
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     setExportError(false)
+    setExporting(true)
     try {
-      const csv = buildCsv(COLUMNS, [...store.values()])
+      const fullStore = await loadAll()
+      const csv = buildCsv(COLUMNS, [...(fullStore ?? store).values()])
       downloadCsv('songs.csv', csv)
     } catch (err) {
       setExportError(true)
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -298,8 +304,8 @@ export function SongsTable({
                 '& .MuiTablePagination-spacer': { display: 'none' },
               }}
             />
-            <Button size="small" onClick={handleExportCsv}>
-              Download CSV
+            <Button size="small" onClick={handleExportCsv} disabled={exporting}>
+              {exporting ? 'Preparing…' : 'Download CSV'}
             </Button>
           </Box>
           {exportError && (
