@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Box, Tabs, Tab, Alert, CircularProgress } from '@mui/material'
-import { useAllSongs } from '../hooks/useAllSongs.js'
+import { useSongsContext } from '../context/SongsContext.jsx'
 import { DanceabilityScatter } from '../components/charts/DanceabilityScatter.jsx'
 import { DurationHistogram } from '../components/charts/DurationHistogram.jsx'
 import { AcousticnessBar } from '../components/charts/AcousticnessBar.jsx'
@@ -14,7 +14,8 @@ const CHARTS = [
 ]
 
 export function ChartsPage() {
-  const { songs, loading, error } = useAllSongs()
+  const { store, loading, error } = useSongsContext()
+  const songs = useMemo(() => [...store.values()], [store])
   const [activeChart, setActiveChart] = useState(CHARTS[0].key)
 
   const ActiveChartComponent = CHARTS.find((c) => c.key === activeChart).Component

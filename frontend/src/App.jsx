@@ -5,6 +5,7 @@ import Brightness4Icon from '@mui/icons-material/Brightness4'
 import Brightness7Icon from '@mui/icons-material/Brightness7'
 import { createAppTheme } from './theme/theme.js'
 import { ParticleBackground } from './components/ParticleBackground.jsx'
+import { SongsProvider } from './context/SongsContext.jsx'
 
 const SongsPage = lazy(() => import('./pages/SongsPage.jsx').then((m) => ({ default: m.SongsPage })))
 const ChartsPage = lazy(() => import('./pages/ChartsPage.jsx').then((m) => ({ default: m.ChartsPage })))
@@ -51,18 +52,20 @@ function App() {
           </Toolbar>
         </AppBar>
         <Toolbar />
-        <Suspense
-          fallback={
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-              <CircularProgress />
-            </Box>
-          }
-        >
-          <Routes>
-            <Route path="/" element={<SongsPage />} />
-            <Route path="/charts" element={<ChartsPage />} />
-          </Routes>
-        </Suspense>
+        <SongsProvider>
+          <Suspense
+            fallback={
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
+                <CircularProgress />
+              </Box>
+            }
+          >
+            <Routes>
+              <Route path="/" element={<SongsPage />} />
+              <Route path="/charts" element={<ChartsPage />} />
+            </Routes>
+          </Suspense>
+        </SongsProvider>
       </Box>
     </ThemeProvider>
   )
