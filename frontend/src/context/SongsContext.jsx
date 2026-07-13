@@ -7,6 +7,7 @@ const SongsContext = createContext(null)
 const PAGE_SIZE = 10
 const INITIAL_FETCH_SIZE = 20
 const MAX_CACHED_ROWS = 500
+const LOAD_ALL_PAGE_SIZE = 1000
 
 export function SongsProvider({ children }) {
   const [store, setStore] = useState(new Map())
@@ -163,10 +164,25 @@ export function SongsProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchSongs({ offset: 0, limit: 100, sort: sortRef.current.sort, order: sortRef.current.order })
-      const fullStore = new Map(data.items.map((song, i) => [i, song]))
+      const fullStore = new Map()
+      let offset = 0
+      let knownTotal = Infinity
+
+      while (offset < knownTotal) {
+        const data = await fetchSongs({
+          offset,
+          limit: LOAD_ALL_PAGE_SIZE,
+          sort: sortRef.current.sort,
+          order: sortRef.current.order,
+        })
+        data.items.forEach((song, i) => fullStore.set(offset + i, song))
+        knownTotal = data.total
+        offset += data.items.length
+        if (data.items.length === 0) break
+      }
+
       setStore(fullStore)
-      setTotal(data.total)
+      setTotal(knownTotal)
       isFullyLoadedRef.current = true
       setIsFullyLoaded(true)
       return fullStore

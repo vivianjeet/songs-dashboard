@@ -121,4 +121,22 @@ describe('SongsContext', () => {
     })
     expect(fetchSongs).not.toHaveBeenCalled()
   })
+
+  it('loadAll pages through the full dataset when it exceeds a single request', async () => {
+    fetchSongs.mockImplementation(mockFetchImpl(2500))
+    const { result } = renderHook(() => useSongsContext(), { wrapper: SongsProvider })
+    await waitFor(() => expect(result.current.store.size).toBe(20))
+    fetchSongs.mockClear()
+
+    await act(async () => {
+      await result.current.loadAll()
+    })
+
+    expect(result.current.store.size).toBe(2500)
+    expect(result.current.isFullyLoaded).toBe(true)
+    expect(fetchSongs).toHaveBeenCalledTimes(3)
+    expect(fetchSongs).toHaveBeenNthCalledWith(1, expect.objectContaining({ offset: 0, limit: 1000 }))
+    expect(fetchSongs).toHaveBeenNthCalledWith(2, expect.objectContaining({ offset: 1000, limit: 1000 }))
+    expect(fetchSongs).toHaveBeenNthCalledWith(3, expect.objectContaining({ offset: 2000, limit: 1000 }))
+  })
 })
