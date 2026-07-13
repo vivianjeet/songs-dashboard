@@ -127,7 +127,8 @@ The working branch model is `develop` → PR → `main`: changes are committed t
 
 This was built to satisfy a take-home assignment, so a few things were deliberately left out that a real production system would need.
 
-- No authentication. The API is open and ratings are global rather than tied to a user.
+- No authentication. The API is open and ratings are global rather than tied to a user. CORS restricts which browser-based frontends can call the API, but it is not an access control mechanism — any non-browser client (curl, Postman, another service) can call every endpoint directly. Real access control would need API keys or bearer tokens on top of this.
+- No rate limiting. A client can call any endpoint, including the paginated `/api/songs` listing, as fast as it likes. Production would need rate limiting at the API gateway or app layer to prevent abuse.
 - SQLite instead of a real database. It works well for a fixed, small dataset like this one, but a production deployment with concurrent writers would need something like Postgres.
 - Offset-based pagination. Fine here, but would need to move to cursor-based pagination on a dataset that grows or changes while paginating.
 - No audit trail on the rating endpoint. There is no record of who changed what or when.
