@@ -7,7 +7,7 @@ vi.mock('../api/api.js', () => ({
   updateSongRating: vi.fn(),
 }))
 
-import { fetchSongs } from '../api/api.js'
+import { fetchSongs, updateSongRating } from '../api/api.js'
 
 function makeSongs(offset, count) {
   return Array.from({ length: count }, (_, i) => ({
@@ -26,7 +26,7 @@ function mockFetchImpl(total = 100) {
 
 describe('SongsContext', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('fetches the first page with the initial 20-row window', async () => {
@@ -138,5 +138,34 @@ describe('SongsContext', () => {
     expect(fetchSongs).toHaveBeenNthCalledWith(1, expect.objectContaining({ offset: 0, limit: 1000 }))
     expect(fetchSongs).toHaveBeenNthCalledWith(2, expect.objectContaining({ offset: 1000, limit: 1000 }))
     expect(fetchSongs).toHaveBeenNthCalledWith(3, expect.objectContaining({ offset: 2000, limit: 1000 }))
+  })
+
+  it('updateRating reconciles the store with the server response on success', async () => {
+    fetchSongs.mockImplementation(mockFetchImpl())
+    updateSongRating.mockResolvedValue({ id: 'song-0', title: 'Song 0', danceability: 0.5, rating: 5 })
+    const { result } = renderHook(() => useSongsContext(), { wrapper: SongsProvider })
+    await waitFor(() => expect(result.current.store.size).toBe(20))
+
+    await act(async () => {
+      await result.current.updateRating(0, 'song-0', 5)
+    })
+
+    expect(result.current.store.get(0)).toEqual({ id: 'song-0', title: 'Song 0', danceability: 0.5, rating: 5 })
+    expect(updateSongRating).toHaveBeenCalledWith('song-0', 5)
+  })
+
+  it('updateRating rolls back the optimistic update if the request fails', async () => {
+    fetchSongs.mockImplementation(mockFetchImpl())
+    updateSongRating.mockRejectedValue(new Error('network error'))
+    const { result } = renderHook(() => useSongsContext(), { wrapper: SongsProvider })
+    await waitFor(() => expect(result.current.store.size).toBe(20))
+    const original = { ...result.current.store.get(0) }
+
+    await act(async () => {
+      await result.current.updateRating(0, 'song-0', 5)
+    })
+
+    expect(result.current.store.get(0)).toEqual(original)
+    expect(result.current.error).not.toBe(null)
   })
 })

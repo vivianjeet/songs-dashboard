@@ -72,7 +72,7 @@ All endpoints are prefixed with `/api`.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/songs` | Paginated song list. Query params: `offset` (default 0), `limit` (default 10, max 100), `sort` (any column name, default `id`), `order` (`asc` or `desc`, default `asc`). Returns `{ items, total }`. |
+| GET | `/songs` | Paginated song list. Query params: `offset` (default 0), `limit` (default 10, max 1000), `sort` (any column name, default `id`), `order` (`asc` or `desc`, default `asc`). Returns `{ items, total }`. |
 | GET | `/songs/search` | Exact-match title lookup. Query param: `title` (required). Returns the full song object, or 404 if no exact match. |
 | GET | `/songs/suggestions` | Partial-match title lookup for typeahead. Query param: `title` (required, min length 1). Returns up to 10 `{ id, title }` matches. |
 | PUT | `/songs/{song_id}/rating` | Sets a song's rating. Body: `{ "rating": <int 1-5> }`. Returns the updated song, or 404 if the id does not exist. |
@@ -88,7 +88,7 @@ On the frontend, `SongsContext` (`frontend/src/context/SongsContext.jsx`) fetche
 - **Sorting** re-fetches from the server with the new `sort`/`order`, since the client only holds a window of rows, not the full ordering — unless every row is already cached locally (see below), in which case it sorts the existing rows in memory instead of making a network call.
 - The client-side page cache is capped at **500 rows**. Once exceeded, the oldest-fetched pages are evicted first (the currently visible page and its prefetched neighbor are never evicted).
 
-Some features — the charts view and CSV export — need the entire dataset, not a window of it. Both call a `loadAll()` that fetches every row in one request and fills the cache completely, bypassing the normal per-page fetching and eviction. If the cache is already complete (e.g. Charts is opened right after a CSV export, or vice versa), `loadAll()` is a no-op — it checks the actual cache size against the known total rather than an internal flag, so opening one after the other never makes a redundant API call.
+Some features — the charts view and CSV export — need the entire dataset, not a window of it. Both call a `loadAll()` that pages through the server in 1000-row requests, accumulating until the server-reported total is reached, and fills the cache completely, bypassing the normal per-page fetching and eviction. This is correct for any dataset size rather than assuming everything fits in one request. If the cache is already complete (e.g. Charts is opened right after a CSV export, or vice versa), `loadAll()` is a no-op — it checks the actual cache size against the known total rather than an internal flag, so opening one after the other never makes a redundant API call.
 
 ## Testing
 
@@ -127,7 +127,8 @@ The working branch model is `develop` → PR → `main`: changes are committed t
 
 This was built to satisfy a take-home assignment, so a few things were deliberately left out that a real production system would need.
 
-- No authentication. The API is open and ratings are global rather than tied to a user.
+- No authentication. The API is open and ratings are global rather than tied to a user. CORS restricts which browser-based frontends can call the API, but it is not an access control mechanism — any non-browser client (curl, Postman, another service) can call every endpoint directly. Real access control would need API keys or bearer tokens on top of this.
+- No rate limiting. A client can call any endpoint, including the paginated `/api/songs` listing, as fast as it likes. Production would need rate limiting at the API gateway or app layer to prevent abuse.
 - SQLite instead of a real database. It works well for a fixed, small dataset like this one, but a production deployment with concurrent writers would need something like Postgres.
 - Offset-based pagination. Fine here, but would need to move to cursor-based pagination on a dataset that grows or changes while paginating.
 - No audit trail on the rating endpoint. There is no record of who changed what or when.
